@@ -7,7 +7,8 @@ format:
     toc: true
     highlight: tango
     self-contained: true
-  pdf: default
+  pdf: 
+    fig-pos: "H"
 format-links: false
 bibliography: example.bib 
 ---
@@ -79,7 +80,16 @@ We work out the two separate cases where $\xi=0$ and where $\xi\neq 0$.
 
 When $\xi=0$, $F(x;\sigma, \xi, u) = 1- \exp\bigg(-\dfrac{x-u}{\sigma} \bigg)$.
 
-We set $p = 1-\exp\bigg(-\dfrac{x-u}{\sigma}\bigg)$, and then obtain $F_X^{-1}(p) = u-\sigma \log(1-p)$.
+We set 
+$$
+\begin{align*}
+p = 1-\exp\bigg(-\dfrac{x-u}{\sigma}\bigg) \\
+\exp\bigg(-\dfrac{x-u}{\sigma}\bigg) = 1-p \\
+\dfrac{x-u}{\sigma} = -\log(1-p) \\
+x-u = -\sigma \log(1-p)
+\end{align*}
+$$
+and then we finally obtain $F_X^{-1}(p) = u-\sigma \log(1-p)$.
 
 When we check the correctness by setting $p=0$ and $p=1$ respectively in the quantile function obtained above, we obtain $x=u$ and $x=+\infty$,which are the correct endpoints.
 
@@ -178,63 +188,72 @@ qgpd <- function(p, shape = 1, scale = 1, location = 1,
 
 ```{r}
 # Testing the function
-print(qgpd(p=c(0.5,0.75, 0.99), location = 1.5, scale = 2, shape = -0.4))
-
+gpd_quantiles <- data.frame(
+    Probability = c(0.5,0.75,0.99),
+    Quantile = (qgpd(p=c(0.5,0.75, 0.99), location = 1.5,
+                      scale = 2, shape = -0.4))
+)
+knitr::kable(gpd_quantiles, format = "pipe",
+             caption = "Probabilities and their corresponding quantiles 
+                        computed by the `qgpd()` function")
 ```
-
 
 ### Question 3
 
-*For this question, all R code should be displayed only within the appendix, not in the main report.*
 
 The file `gpd_samples.csv` contains six sets of random variates generated from different generalised Pareto distributions. The details of the generalised Pareto distributions used are summarised in `gpd_parameters.csv`. Unfortunately some of the parameter sets were recorded incorrectly.
 
 Within a single figure, construct a series of quantile-quantile plots to identify which datasets are inconsistent with their stated distributions. You should both justify your conclusions and describe your level of confidence in your findings.
 
-::: callout-tip
-## Set yourself up for success
-
-Does your solution contain:
-
-- at least one quantile-quantile plot;
-- six qq-plots in a single figure;
-- use of loops, vectorisation, or function definitions to avoid repetitive code.
-- figures with clear text, useful captions and appropriate visual mapping of data;
-- a few paragraphs describing and justifying your findings and referencing the figure;
-:::
-
-<!-- YOUR ANSWER GOES HERE -->
 
 ### Solution to Question 3
 
-Working solution: We use the Probability Integral Transform. 
+From the six quantile-quantile plots generated(displayed below), we can immediately see that Dataset $b$ is the most consistent with the corresponding generalised Pareto distribution, with a high level of confidence.
+
+Looking at the shapes of the q-q plots, we can further group datasets $d$ and $e$ together, as almost all of the plotted points lie under the diagonal line, resulting in a noticeable deviation along all samples, which is a strong indication the datasets $d$ and $e$ came from  different distributions that have lighter tails than the corresponding stated distributions. The large sizes of the datasets also further confirms the conclusion. 
+
+Datasets $a$ and $c$ follow the distribution a bit closer than $d$ and $e$ at the beginning, but towards the tail end deviate. However, the dataset $c$ only contains $20$ data points, meaning it is also likely that it could be attributed to chance.
+
+Dataset $f$, up to around $x=40$, fits the distribution almost perfectly. However, towards the tail end, shows a great deviation, suggesting a heavier tail than the stated record distribution. 
 
 
-```{r echo = FALSE, fig.width = 7, fig.height = 10}
+```{r}
+#| echo: false
+#| fig-width: 6.5
+#| fig-height: 7.5
+#| fig-pos: "H"
+#| fig-cap: "Quantile-quantile plots of each dataset against the quantiles of its stated generalised Pareto distribution."
+#
 parameters <-read.csv ("gpd_parameters.csv")
 samples <- read.csv("gpd_samples.csv")
 
+par(mfrow = c(3, 2), mar = c(4, 4, 3, 1), oma = c(0, 0, 3, 0),
+    cex.main = 0.95, las = 1)
 
-par(mfrow = c(3,2))
 for (cur_id in seq_len(nrow(parameters))){
     cur_parameters <- parameters[cur_id,]
     set <- cur_parameters[["id"]]
     cur_samples <- samples[samples$set_id == set,]
     
-    
-    
     qqplot(y=cur_samples$value, x=qgpd(p = ppoints(nrow(cur_samples)),
                                  shape = cur_parameters[["xi"]],
                                  scale = cur_parameters[["sigma"]],
                                  location = cur_parameters[["u"]]),
-          xlab = "values of samples",
-          ylab = "theoretical samples",
-          main = paste("Dataset ", set)
-    )
-    abline(0,1)
-  }
+          xlab = "theoretical quantiles",
+          ylab = "dataset quantiles",
+          main = paste("Q-Q plot for Dataset ", set),
+          axes = FALSE
+          )
+    abline(0,1, col = "#fc6a85")
+    axis(1)
+    axis(2)
+}
+
+mtext("QQ-plots of datasets against their stated GPD", outer = TRUE,
+      side = 3, line = 0.5, font = 2)
 
 ```
+{{<pagebreak>}}
 
 ### Question 4
 
@@ -247,25 +266,110 @@ A hydrologist is interested in understanding the river flow at a location that i
 
 Use `riverflow_2015-2024.csv` to conduct an exploratory investigation of whether these proposals are valid for the dataset provided. Summarise your findings in 250-350 words, supporting these with a collection of 4 visualisations/figures.
 
-::: callout-tip
-## Set yourself up for success
 
-Does your answer contain:
+### Solution to Question 4
 
-- 400-500 words of text clearly describing your choice of visualisations, their interpretation and your conclusions about the validity of each assumption,
-- A series of 4 visualisations / figures,
-- A varied and appropriate choice of figures to investigate each of the hydrologist's proposals,
-- Figures with clear text, useful captions and appropriate visual mapping of data;
-- At least one reference to each visualisation within the main text.
-:::
+```{r}
+#| echo: false
+#| label: fig-qq-river
+#| fig-width: 4
+#| fig-height: 4
+#| fig-cap: "q-q plot for observed quantiles against the quantiles for the proposed distribution"
 
-<!-- YOUR INVESTIGATION GOES HERE -->
+flow_data <- read.csv("riverflow_2015_2024.csv")
+flow_data$date  <- as.Date(flow_data$date)
 
-::: callout-tip
-## Set yourself up for success
+flow_data$year  <- factor(format(flow_data$date, "%Y"))
+flow_data$month <- factor(format(flow_data$date, "%b"), 
+                          levels = month.abb)
 
-- Does your document render without any formatting issues?
-:::
+mild_flow <- flow_data[flow_data$flow <=75,]
+
+heavy_flow <- flow_data[flow_data$flow>75,]
+
+qqplot(x = qgpd(p = ppoints(nrow(heavy_flow)),
+                shape = 0.62,
+                scale = 29.7,
+                location = 0),
+       y = heavy_flow$flow-75,
+       xlab = "theoretical quantiles(cumecs)",
+       ylab = "excess of flows over 75 cumecs (cumecs)",
+       cex.lab = 0.8,
+       axes = FALSE,
+       asp = 1
+       )
+abline(0,1, col = "#fc6a85")
+axis(1)
+axis(2)
+grid(nx = NULL, ny = NULL, lty = 2, col="gray", lwd = 1)
+```
+```{r}
+#| echo: false
+#| label: fig-time-series
+#| fig-height: 4
+#| fig-width: 8
+#| fig-cap: "Time-series plot of flow over time, trend line shows rolling average"
+
+flow_data$rolling <- as.numeric(stats::filter(flow_data$flow,
+                                              rep(1/365,365),
+                                              sides =2))
+
+plot(
+  x = flow_data$date,
+  y = log(flow_data$flow),
+  xlab = "Date",
+  ylab = "Log of Flow (Cumecs)",
+  type = "l",
+  lwd = 0.4,
+  col = "grey20"
+)
+
+lines(
+  x = flow_data$date,
+  y = log(flow_data$rolling),
+  col = "red", lwd = 1
+)
+ 
+```
+```{r}
+#| echo: false
+#| label: fig-box-month
+#| fig-cap: "Box plots by month"
+#| fig-width: 7
+#| fig-height: 4
+
+boxplot(log(flow_data$flow) ~ flow_data$month,
+        ylab = "Flow(cumecs)",
+        xlab = "Month",
+        pch = 16
+        )
+grid(nx =NULL, ny =NULL, lty =2, col="gray", lwd =1)
+
+```
+```{r}
+#| echo: false
+#| label: fig-box-year
+#| fig-cap: "Box plots by year"
+#| fig-width: 7
+#| fig-height: 4
+boxplot(log(flow_data$flow) ~ flow_data$year,
+        ylab = "Flow(cumecs)",
+        xlab = "Year",
+        pch = 16
+        )
+grid(nx =NULL, ny =NULL, lty =2, col="gray", lwd =1)
+```
+
+
+Looking at @fig-time-series, we can immediately notice two things. 
+
+1. There is a periodic rise and fall in the flow. This could be attributed to the seasonal changes in the flow of the river. 
+
+2. The rolling mean stayed fairly constant over time, which indicates that the underlying distribution stayed constant, although a slight upward trend could be observed in the later years. 
+
+@fig-box-year
+
+{{<pagebreak>}}
 
 ## Question 5 Reflective Summary
 
