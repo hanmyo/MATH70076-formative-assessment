@@ -83,10 +83,10 @@ When $\xi=0$, $F(x;\sigma, \xi, u) = 1- \exp\bigg(-\dfrac{x-u}{\sigma} \bigg)$.
 We set 
 $$
 \begin{align*}
-p = 1-\exp\bigg(-\dfrac{x-u}{\sigma}\bigg) \\
-\exp\bigg(-\dfrac{x-u}{\sigma}\bigg) = 1-p \\
-\dfrac{x-u}{\sigma} = -\log(1-p) \\
-x-u = -\sigma \log(1-p)
+p &= 1-\exp\bigg(-\dfrac{x-u}{\sigma}\bigg) \\ \\
+\exp\bigg(-\dfrac{x-u}{\sigma}\bigg) &= 1-p \\ \\
+\dfrac{x-u}{\sigma} &= -\log(1-p) \\ \\
+x-u &= -\sigma \log(1-p)
 \end{align*}
 $$
 and then we finally obtain $F_X^{-1}(p) = u-\sigma \log(1-p)$.
@@ -97,7 +97,19 @@ When we check the correctness by setting $p=0$ and $p=1$ respectively in the qua
 
 When $\xi \neq 0$, $F(x; \sigma, \xi, u) = 1 - \bigg(1+\dfrac{\xi(x-u)}{\sigma}\bigg)^{-1/\xi}_+$.
 
-We set the above CDF to $p$, and then obtain the quantile function $F_X^{-1}(p)=\dfrac{\sigma}{\xi}(1-p)^{-\xi}-\dfrac{\sigma}{\xi}+u$.
+We set the above CDF to $p$.
+
+$$
+\begin{align*}
+p &=  1- \bigg( 1+ \dfrac {\xi(x-u)}{\sigma}\bigg)_+^{-1/\xi} \\ \\
+\bigg( 1+ \dfrac {\xi(x-u)}{\sigma}\bigg)_+^{-1/\xi} &= 1-p \\ \\
+1+ \dfrac {\xi(x-u)}{\sigma} &= (1-p)^{-\xi} \\ \\
+x-u &= \dfrac{\sigma}{\xi}(1-p)^{-\xi} - \dfrac{\sigma}{\xi} \\ \\
+x &= \dfrac{\sigma}{\xi}(1-p)^{-\xi} - \dfrac{\sigma}{\xi} + u
+\end{align*}
+$$
+
+Then we finally obtain the quantile function $F_X^{-1}(p)=\dfrac{\sigma}{\xi}(1-p)^{-\xi}-\dfrac{\sigma}{\xi}+u$.
 
 At $p= 0$ and $p = 1$, $F_X^{-1}(p)$ returns $u$ and $x^+$ respectively.
 
@@ -110,6 +122,7 @@ F_X^{-1}(p)=
 u-\sigma \log(1-p),   & \xi=0;
 \end{cases}
 $$
+{{<pagebreak>}}
 
 ### Question 2
 
@@ -131,10 +144,10 @@ $$
 #' longest input vector as expected for built-in `R` functions and 
 #' set the length of the result as that. 
 #' @param p A numeric vector of probabilities between 0 and 1
-#' @param shape A numeric value specifying the shape parameter
-#' @param scale A numeric value specifying the shape parameter,
+#' @param shape A numeric vector specifying the shape parameter
+#' @param scale A numeric vector specifying the shape parameter,
 #'  greater than zero
-#' @param location A numeric value specifying the location parameter
+#' @param location A numeric vector specifying the location parameter
 #' @param lower.tail logical; if TRUE(default),
 #'  probabilities are P[X<=x], otherwise, P[X>x]
 #' @param log.p logical; if TRUE, probabilities p are given 
@@ -145,10 +158,13 @@ $$
 qgpd <- function(p, shape = 1, scale = 1, location = 1,
                  lower.tail = TRUE, log.p = FALSE ){
   
+  # Checks if the input is of the correct type, 
+  # and throws an error otherwise
   if (!is.numeric(p) || !is.numeric(shape) ||
       !is.numeric(scale) || !is.numeric(location)){
     stop("Non-numeric argument to mathematical function")
   }
+  
   # Recycle values in the input vectors according 
   # to the length of the longest vector
   n        <- max(length(p), length(scale),
@@ -163,8 +179,10 @@ qgpd <- function(p, shape = 1, scale = 1, location = 1,
   if (log.p)       p <-exp(p)
   if (!lower.tail) p <- 1-p
   
-  # locations where the output should be set to NaN
+  # indices where the output should be set to NaN
   valid_dex <- p>=0 & p<=1 & scale >0
+  
+  # initialise the output vector
   # for negative and zero scale values, set the output to NaN
   out <- rep(NaN,times = n)
   out[is.na(p)] <-NA
@@ -210,11 +228,11 @@ Within a single figure, construct a series of quantile-quantile plots to identif
 
 ### Solution to Question 3
 
-From the six quantile-quantile plots shown in @fig-qq-six, we can immediately see that Dataset $b$ is the most consistent with the corresponding generalised Pareto distribution, with a high level of confidence.
+From the six quantile-quantile plots shown in @fig-qq-six, we can immediately see that dataset $b$ is the most consistent with the corresponding stated generalised Pareto distribution, with a high level of confidence.
 
-Looking at the shapes of the q-q plots, we can further group datasets $d$ and $e$ together, as almost all of the plotted points lie under the diagonal line, resulting in a noticeable deviation along all samples, which is a strong indication the datasets $d$ and $e$ came from  different distributions that have lighter tails than the corresponding stated distributions. The large sizes of the datasets also further confirms the conclusion. 
+Looking at the shapes of the q-q plots, we can further group datasets $d$ and $e$ together, as almost all of the plotted points lie under the diagonal line, resulting in a noticeable deviation along all samples, which is a strong indication the datasets $d$ and $e$ came from  different distributions that have lighter tails than the corresponding stated distributions. The large sizes of the datasets also further confirm the conclusion. 
 
-Datasets $a$ and $c$ follow the distribution a bit closer than $d$ and $e$ at the beginning, but towards the tail end deviate. However, the dataset $c$ only contains $20$ data points, meaning it is also likely that it could be attributed to chance.
+Datasets $a$ and $c$ follow their proposed distributions a bit closer than $d$ and $e$ do at the beginning, but towards the tail end deviate. However, dataset $c$ only contains $20$ data points, meaning it is also likely that it could be attributed to chance.
 
 Dataset $f$, up to around $x=40$, fits the distribution almost perfectly. However, towards the tail end, shows a great deviation, suggesting a heavier tail than the stated record distribution. 
 
@@ -350,10 +368,11 @@ boxplot(log(flow_data$flow) ~ flow_data$year,
 
 ```
 
-We first tackle the first claim of whether the distribution of the flow is constant over time. There is evidence in the data that says otherwise. First, there is noticeable seasonality in the flow looking at @fig-box-1. Namely, May and November has a significant heightening in the median flow of the river compared to other months, across the years. Furthermore, as @fig-time-series shows, by the sinusoidal shape of the flow over time, that there is clear periodicity happening, likely attributed to the effects of the seasonal changes on the river. 
+We first tackle the claim of whether the distribution of the flow is constant over time. There is evidence in the data that says otherwise.
 
-Secondly, Looking at both @fig-time-series and @fig-box-2, there has been a slight but noticeable and gradual enough upward drift in the flow of the river from 2015 to 2024, evidenced by the increase in the median, lower and upper quartiles of the flows from 2015 to 2024 (@fig-box-2), and also the gradual rise in the rolling average across ten years of flow data. 
+Firstly, there is noticeable seasonality in the flow according to @fig-box-1. Namely, May and November have a significant heightening in the median flow of the river compared to other months, across the years. Furthermore, by the sinusoidal shape of the flow seen in @fig-time-series over time, there is clear periodicity happening, which can likely be attributed to the effects the seasonal changes have on the river. 
 
+Secondly, looking at both @fig-time-series and @fig-box-2, there has been a slight but noticeable and gradual enough upward drift in the flow of the river from 2015 to 2024, evidenced by the increase in the median, lower and upper quartiles of the flows from 2015 to 2024 (@fig-box-2), and also the gradual rise in the rolling average across ten years of flow data. 
 
 Therefore, there is strong evidence to suggest that the distribution of the flow of the river does not stay constant over time. 
 
@@ -403,9 +422,11 @@ axis(2)
 
 
 
-Next, we assess the second claim of whether the excesses over 75 cumecs are following an i.i.d $GPD(\sigma = 29.7, \xi = 0.62, u = 0)$. @fig-lag-plot shows the relationship between the flow on day $t$ and $t+1$. Here, the flow on day $t+1$ is plotted against that of day $t$. The vertical and horizontal lines at $75$ cumecs on each axis marks where the flows exceed the threshold. 
+Next, we assess the second claim of whether the excesses over 75 cumecs are following an i.i.d $GPD(\sigma = 29.7, \xi = 0.62, u = 0)$.
 
-As can be seen from the clustering, a great majority of points lie in the lower left quadrant, which are days of consecutive normal flows, under the threshold of $75$ cumecs. It also shows that a majority days that experience heavy flows (over $75$ cumecs) are isolated, as in, the river flow usually goes back to normal after having a single day of excessive flow, as can be seen from the points in the the upper left and lower right quadrants. 
+@fig-lag-plot shows the relationship between the flows on day $t$ and $t+1$. Here, the flow on day $t+1$ is plotted against that of day $t$. The vertical and horizontal lines at $75$ cumecs on each axis mark where the flows exceed the threshold. 
+
+As can be seen from the clustering, a great majority of points lie in the lower left quadrant, which are days of consecutive normal flows, under the threshold of $75$ cumecs. It also shows that a majority of the days that experience heavy flows (over $75$ cumecs) are isolated, as in, the river flow usually goes back to normal after having a single day of excessive flow, as can be seen from the points in the the upper left and lower right quadrants. 
 
 Finally, there are only a handful of points that lie in the upper right quadrant, which show excessive flows lasting more than a single day. Therefore, it is reasonable to assume that the excesses over $75$ cumecs are independently distributed. 
  
@@ -426,11 +447,15 @@ Your response should be 300-400 words and might, for example, comment on:
 ### Solution to Question 5
 
 
-Initially, I only had one plot that would address the second claim made by the hydrologist. In total, I had the time series plot, @fig-time-series, and I had counted the two box plots as two separate figures instead of two subplots in one combined figure like they are in the final version of the report. Only the qq plot, @fig-qq-river was included, which only answered the part of whether the underlying distribution could reasonably be modelled as a generalised Pareto distribution with the stated parameters. 
+Initially, I only had one plot that would address the second claim made by the hydrologist. In total, I had the time-series plot( @fig-time-series), and I had counted the two box plots as two separate figures instead of two subplots in one combined figure, like they are in the final version of the report. Only the qq plot(@fig-qq-river) was included, which only answered the part of whether the underlying distribution could reasonably be modelled as a generalised Pareto distribution with the stated parameters. 
 
-However, I noticed that my plots had not addressed the claim of independence of the excesses of flows over $75$ cumecs, and so I looked for ways to plot the data in such a way that would give a clear visualisation to whether independence holds. In the end, I decided to use a lag plot (@fig-lag-plot), as it is the type of plot I have the best intuition of and is also the easiest for me to read and interpret. Alternatives such as ACFs plot also came up while researching about possible ways to answer the question of independence. However, I decided to not include one as I did not have a proper understanding of the method, and so I would not have been able to provide adequate justification. 
+However, I noticed that my plots had not addressed the claim of independence of the excesses of flows over $75$ cumecs, and so I looked for ways to plot the data in such a way that would give a clear visualisation to whether independence holds. In the end, I decided to use a lag plot (@fig-lag-plot), as it is the type of plot I have the best intuition of and is also the easiest for me to read and interpret. Alternatives such as ACF plots also came up while researching about possible ways to answer the question of independence. However, I decided to not include one as I did not have a proper understanding of the method, and so I would not have been able to provide adequate justification. 
 
-With more time, I would have looked for more ways to visualise the data that would bring more light to the underlying distribution of the river flow, the periodicity, and the nature of the excessive flows over $75$ cumecs. On reflection, the time series plot also seems redundant for its intended purpose in the report when used together with the yearly box plots, @fig-box-2, and the rolling mean does not in any way indicate seasonality of the flow of the river, which is visualised by @fig-box-1. I would look for ways to visualise the data in a way that is not redundant. One thing that comes to my mind is to divide up the data into months and then try to show that they fit different distributions. For this more research and learning on my part should be done. All in all, stuyding this dataset and creating visualisations have taught me more about working on a dataset with a clear goal and questions to answer, and how R can be used to achieve that. 
+With more time, I would have looked for more ways to visualise the data that would bring more light to the underlying distribution of the river flow, the periodicity, and the nature of the excessive flows over $75$ cumecs. On reflection, the time-series plot also seems redundant for its intended purpose in the report when used together with the yearly box plots (@fig-box-2), and the rolling mean does not in any way indicate seasonality of the flow of the river, which is visualised by @fig-box-1.
+
+I would look for ways to visualise the data in a way that is not redundant. One thing that comes to my mind is to divide up the data into months and then try to show that they fit different distributions. Especially for a hydrologist, this would be important as they are interested in risks of flooding and to predict the chances and the magnitude of flooding at any given time of the year. For this, more research and learning on my part should be done.
+
+All in all, studying this dataset and creating visualisations have taught me more about working on a dataset with a clear goal and questions to answer, and how R can be used to achieve that. 
 
 *End of Assessment.*
 
